@@ -23,6 +23,7 @@ services:
   # ─── Contenedor de la Aplicación Django ────────────────────────────────────
   web:
     build: .
+    image: django-cicd:latest       # Tag usado por el pipeline CI/CD
     container_name: django_cicd_web
     ports:
       - "8000:8000"
@@ -40,6 +41,6 @@ services:
       db:
         condition: service_healthy
 
-# ─── Volúmenes persistentes ────────────────────────────────────────────────────
+# ─── Volúmenes persistentes ─────────────────────────────────────────────────
 volumes:
   postgres_data:
