@@ -1,4 +1,4 @@
-name: Django CI Pipeline
+name: Django CI/CD Pipeline
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
+
+  # ── Job 1: Tests ────────────────────────────────────────────────────────────
   test:
     name: Ejecutar Tests
     runs-on: ubuntu-latest
@@ -30,3 +32,72 @@ jobs:
 
       - name: Ejecutar tests
         run: python manage.py test -v 2
+
+  # ── Job 2: Build Docker Image ───────────────────────────────────────────────
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construir imagen Docker
+        run: docker build -t django-cicd:latest .
+
+      - name: Guardar imagen como artefacto (.tar.gz)
+        run: docker save django-cicd:latest | gzip > django-cicd-image.tar.gz
+
+      - name: Subir artefacto a GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: django-cicd-image.tar.gz
+          retention-days: 7
+
+  # ── Job 3: Simulación de Despliegue ────────────────────────────────────────
+  deploy-sim:
+    name: Simulacion de Despliegue
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Descargar artefacto Docker
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+
+      - name: Cargar imagen en Docker local
+        run: docker load < django-cicd-image.tar.gz
+
+      - name: Levantar contenedores con Docker Compose
+        run: docker compose up -d --no-build
+
+      - name: Esperar a que Django esté disponible
+        run: |
+          echo "Esperando que la aplicacion inicie..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/api/health/; then
+              echo ""
+              echo "Aplicacion lista en el intento $i"
+              break
+            fi
+            echo "Intento $i/30 — reintentando en 3s..."
+            sleep 3
+          done
+
+      - name: Validar despliegue (Health Check)
+        run: |
+          curl -f http://localhost:8000/api/health/
+          curl -f http://localhost:8000/api/tasks/
+
+      - name: Mostrar logs finales
+        if: always()
+        run: docker compose logs --tail=30
