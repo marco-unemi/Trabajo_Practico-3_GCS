@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}{{ task.title }}{% endblock %}
+
+{% block content %}
+<a href="{% url 'tasks:task_list' %}" style="display: inline-block; margin-bottom: 1rem;">← Volver a la lista</a>
+
+<div class="card">
+    <h2>{{ task.title }}</h2>
+    <p style="margin: 1rem 0;">{{ task.description|default:"Sin descripción." }}</p>
+
+    <p>
+        <strong>Prioridad:</strong>
+        <span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+    </p>
+    <p><strong>Estado:</strong> {{ task.completed|yesno:"Completada,Pendiente" }}</p>
+    <p><strong>Creada:</strong> {{ task.created_at|date:"d/m/Y H:i" }}</p>
+    <p><strong>Actualizada:</strong> {{ task.updated_at|date:"d/m/Y H:i" }}</p>
+</div>
+{% endblock %}

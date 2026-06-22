@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Tareas{% endblock %}
+
+{% block content %}
+<h2 style="margin-bottom: 1rem;">Tareas</h2>
+
+{% if tasks %}
+    {% for task in tasks %}
+    <div class="card">
+        <h3>
+            <a href="{% url 'tasks:task_detail' task.pk %}">{{ task.title }}</a>
+            {% if task.completed %}
+                <span class="badge badge-done">✔ Completada</span>
+            {% endif %}
+        </h3>
+        <p style="margin: 0.5rem 0; color: #666;">{{ task.description|truncatewords:20 }}</p>
+        <span class="badge badge-{{ task.priority }}">{{ task.get_priority_display }}</span>
+        <small style="color: #999; margin-left: 0.5rem;">{{ task.created_at|date:"d/m/Y H:i" }}</small>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card">
+        <p>No hay tareas registradas. Usa el admin para crear una.</p>
+    </div>
+{% endif %}
+{% endblock %}
